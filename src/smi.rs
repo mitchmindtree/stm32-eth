@@ -81,4 +81,11 @@ impl<'a> SMI<'a> {
         let value = self.read(phy, reg);
         self.write(phy, reg, value | mask);
     }
+
+    /// Helper: `read()` and `write()` by OR-ing the current value of
+    /// the register `reg` with `mask`.
+    pub fn clear_bits(&self, phy: u8, reg: u8, mask: u16) {
+        let value = self.read(phy, reg);
+        self.write(phy, reg, value & (value ^ mask))
+    }
 }

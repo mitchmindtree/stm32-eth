@@ -25,7 +25,7 @@ use hal::rcc::Clocks;
 use stm32::{Interrupt, ETHERNET_DMA, ETHERNET_MAC, NVIC};
 
 pub mod phy;
-use phy::{Phy, PhyStatus};
+use phy::Phy;
 mod ring;
 mod smi;
 pub use ring::RingEntry;
@@ -71,21 +71,51 @@ use self::consts::*;
 #[derive(Debug)]
 pub struct WrongClock;
 
-/// Initial PHY address, must be zero or one.
+/// PHY address. In MDIO this is generally a maximum of 5-bits following the access type and
+/// preceding the register address.
 #[derive(Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum PhyAddress {
     _0 = 0,
     _1 = 1,
+    _2 = 2,
+    _3 = 3,
+    _4 = 4,
+    _5 = 5,
+    _6 = 6,
+    _7 = 7,
+    _8 = 8,
+    _9 = 9,
+    _10 = 10,
+    _11 = 11,
+    _12 = 12,
+    _13 = 13,
+    _14 = 14,
+    _15 = 15,
+    _16 = 16,
+    _17 = 17,
+    _18 = 18,
+    _19 = 19,
+    _20 = 20,
+    _21 = 21,
+    _22 = 22,
+    _23 = 23,
+    _24 = 24,
+    _25 = 25,
+    _26 = 26,
+    _27 = 27,
+    _28 = 28,
+    _29 = 29,
+    _30 = 30,
+    _31 = 31,
 }
 
-/// Ethernet driver for *STM32* chips with a RMII [`Phy`](phy/struct.Phy.html).
+/// Ethernet driver for *STM32* chips with a RMII interface and one or more connected PHYs.
 pub struct Eth<'rx, 'tx> {
     eth_mac: ETHERNET_MAC,
     eth_dma: ETHERNET_DMA,
     rx_ring: RxRing<'rx>,
     tx_ring: TxRing<'tx>,
-    phy_address: PhyAddress,
 }
 
 impl<'rx, 'tx> Eth<'rx, 'tx> {
@@ -106,7 +136,6 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
         eth_dma: ETHERNET_DMA,
         rx_buffer: &'rx mut [RxRingEntry],
         tx_buffer: &'tx mut [TxRingEntry],
-        phy_address: PhyAddress,
         clocks: Clocks,
         pins: EthPins<REFCLK, IO, CLK, CRS, TXEN, TXD0, TXD1, RXD0, RXD1>,
     ) -> Result<Self, WrongClock>
@@ -128,7 +157,6 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
             eth_dma,
             rx_ring: RxRing::new(rx_buffer),
             tx_ring: TxRing::new(tx_buffer),
-            phy_address,
         };
         eth.init(clocks)?;
         eth.rx_ring.start(&eth.eth_dma);
@@ -152,8 +180,6 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
         self.eth_mac
             .macmiiar
             .modify(|_, w| unsafe { w.cr().bits(clock_range) });
-
-        self.get_phy().reset().set_autoneg();
 
         // Configuration Register
         self.eth_mac.maccr.modify(|_, w| {
@@ -288,18 +314,13 @@ impl<'rx, 'tx> Eth<'rx, 'tx> {
         eth_interrupt_handler(&self.eth_dma);
     }
 
-    /// Construct a PHY driver
-    pub fn get_phy(&self) -> Phy {
+    /// Construct a PHY driver for the PHY at the given address.
+    pub fn get_phy(&self, phy_address: PhyAddress) -> Phy {
         Phy::new(
             &self.eth_mac.macmiiar,
             &self.eth_mac.macmiidr,
-            self.phy_address as u8,
+            phy_address as u8,
         )
-    }
-
-    /// Obtain PHY status
-    pub fn status(&self) -> PhyStatus {
-        self.get_phy().status()
     }
 
     /// Is Rx DMA currently running?

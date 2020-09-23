@@ -5,7 +5,7 @@ use core::option::Option;
 use crate::smi::SMI;
 
 #[allow(dead_code)]
-mod consts {
+pub mod consts {
     pub const PHY_REG_BCR: u8 = 0x00;
     pub const PHY_REG_BSR: u8 = 0x01;
     pub const PHY_REG_ID1: u8 = 0x02;
@@ -17,6 +17,7 @@ mod consts {
     pub const PHY_REG_ANNPRX: u8 = 0x08;
     pub const PHY_REG_SSR: u8 = 0x1F; // Special Status Register
 
+    pub const PHY_REG_BCR_DISABLE_LED: u16 = 1;
     pub const PHY_REG_BCR_COLTEST: u16 = 1 << 7;
     pub const PHY_REG_BCR_FD: u16 = 1 << 8;
     pub const PHY_REG_BCR_ANRST: u16 = 1 << 9;
@@ -70,6 +71,31 @@ impl<'a> Phy<'a> {
         }
     }
 
+    // SMI access.
+
+    /// Read directly from an SMI register associated with this PHY.
+    pub fn read(&self, reg: u8) -> u16 {
+        self.smi.read(self.phy, reg)
+    }
+
+    /// Write directly to an SMI register associated with this PHY.
+    pub fn write(&self, reg: u8, data: u16) {
+        self.smi.write(self.phy, reg, data)
+    }
+
+    /// Helper: `read()` and `write()` by OR-ing the current value of
+    /// the register `reg` with `mask`.
+    pub fn set_bits(&self, reg: u8, mask: u16) {
+        self.smi.set_bits(self.phy, reg, mask)
+    }
+
+    /// Helper: `read()` and `write()` to clear the bits under the given mask.
+    pub fn clear_bits(&self, reg: u8, mask: u16) {
+        self.smi.clear_bits(self.phy, reg, mask)
+    }
+
+    // SMI access.
+
     /// Reset the PHY
     pub fn reset(&self) -> &Self {
         self.smi.set_bits(self.phy, PHY_REG_BCR, PHY_REG_BCR_RESET);
@@ -87,7 +113,24 @@ impl<'a> Phy<'a> {
             PHY_REG_BCR,
             PHY_REG_BCR_AN | PHY_REG_BCR_ANRST | PHY_REG_BCR_100M,
         );
+        self
+    }
 
+    pub fn set_force_100(&self) -> &Self {
+        self.smi.set_bits(
+            self.phy,
+            PHY_REG_BCR,
+            PHY_REG_BCR_100M,
+        );
+        self
+    }
+
+    pub fn set_disable_led(&self) -> &Self {
+        self.smi.set_bits(
+            self.phy,
+            PHY_REG_BCR,
+            PHY_REG_BCR_DISABLE_LED,
+        );
         self
     }
 }
