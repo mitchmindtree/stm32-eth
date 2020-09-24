@@ -3,6 +3,9 @@ use crate::stm32::ethernet_mac::{MACMIIAR, MACMIIDR};
 use core::option::Option;
 
 use crate::smi::SMI;
+use self::reg::Register;
+
+pub mod reg;
 
 #[allow(dead_code)]
 pub mod consts {
@@ -73,25 +76,30 @@ impl<'a> Phy<'a> {
 
     // SMI access.
 
-    /// Read directly from an SMI register associated with this PHY.
-    pub fn read(&self, reg: u8) -> u16 {
-        self.smi.read(self.phy, reg)
+    pub fn read<R>(&self) -> R
+    where
+        R: Register,
+    {
+        R::from(self.smi.read(self.phy, R::ADDRESS))
     }
 
-    /// Write directly to an SMI register associated with this PHY.
-    pub fn write(&self, reg: u8, data: u16) {
-        self.smi.write(self.phy, reg, data)
+    pub fn write<R>(&self, reg: R) -> &Self
+    where
+        R: Register,
+    {
+        self.smi.write(self.phy, R::ADDRESS, reg.into());
+        self
     }
 
-    /// Helper: `read()` and `write()` by OR-ing the current value of
-    /// the register `reg` with `mask`.
-    pub fn set_bits(&self, reg: u8, mask: u16) {
-        self.smi.set_bits(self.phy, reg, mask)
-    }
-
-    /// Helper: `read()` and `write()` to clear the bits under the given mask.
-    pub fn clear_bits(&self, reg: u8, mask: u16) {
-        self.smi.clear_bits(self.phy, reg, mask)
+    /// Short-hand for modifying the register in its current state.
+    pub fn modify<R, F>(&self, f: F) -> &Self
+    where
+        R: Register,
+        F: FnOnce(&mut R),
+    {
+        let mut r: R = self.read();
+        f(&mut r);
+        self.write(r)
     }
 
     // SMI access.
@@ -106,33 +114,47 @@ impl<'a> Phy<'a> {
         self
     }
 
-    /// Enable 10/100 Mbps half/full-duplex auto-negotiation
-    pub fn set_autoneg(&self) -> &Self {
-        self.smi.set_bits(
-            self.phy,
-            PHY_REG_BCR,
-            PHY_REG_BCR_AN | PHY_REG_BCR_ANRST | PHY_REG_BCR_100M,
-        );
-        self
+    /// Current speed according to the basic status register.
+    pub fn speed(&self) -> u8 {
+        let bsr = self.bsr();
+        if bsr.capable_100_fd() || bsr.capable_100_hd() {
+            100
+        } else if bsr.capable_10_fd() || bsr.capable_10_hd() {
+            10
+        } else {
+            0
+        }
     }
 
-    pub fn set_force_100(&self) -> &Self {
-        self.smi.set_bits(
-            self.phy,
-            PHY_REG_BCR,
-            PHY_REG_BCR_100M,
-        );
-        self
+    /// Whether or not the basic status register indicates full duplex capability.
+    pub fn is_fd(&self) -> bool {
+        let bsr = self.bsr();
+        if bsr.capable_100_fd() || bsr.capable_10_fd() {
+            true
+        } else {
+            false
+        }
     }
 
-    pub fn set_disable_led(&self) -> &Self {
-        self.smi.set_bits(
-            self.phy,
-            PHY_REG_BCR,
-            PHY_REG_BCR_DISABLE_LED,
-        );
-        self
+    /// Whether or not the basic status register indicates half duplex capability.
+    pub fn is_hd(&self) -> bool {
+        let bsr = self.bsr();
+        if bsr.capable_100_hd() || bsr.capable_10_hd() {
+            true
+        } else {
+            false
+        }
     }
+
+    // /// Enable 10/100 Mbps half/full-duplex auto-negotiation
+    // pub fn set_autoneg(&self) -> &Self {
+    //     self.smi.set_bits(
+    //         self.phy,
+    //         PHY_REG_BCR,
+    //         PHY_REG_BCR_AN | PHY_REG_BCR_ANRST | PHY_REG_BCR_100M,
+    //     );
+    //     self
+    // }
 }
 
 /// PHY status register
