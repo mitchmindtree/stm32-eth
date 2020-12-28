@@ -267,12 +267,10 @@ mod stm32f1 {
     // would be inconvenient to pass CRL and CRH through to the `AlternateVeryHighSpeed` callsite.
 
     type PA1 = gpioa::PA1<Input<Floating>>;
-    type PA2 = gpioa::PA2<Alternate<PushPull>>;
     type PA7 = gpioa::PA7<Input<Floating>>;
     type PB11 = gpiob::PB11<Alternate<PushPull>>;
     type PB12 = gpiob::PB12<Alternate<PushPull>>;
     type PB13 = gpiob::PB13<Alternate<PushPull>>;
-    type PC1 = gpioc::PC1<Alternate<PushPull>>;
     type PC4 = gpioc::PC4<Input<Floating>>;
     type PC5 = gpioc::PC5<Input<Floating>>;
     type PD8 = gpiod::PD8<Input<Floating>>;
@@ -280,8 +278,6 @@ mod stm32f1 {
     type PD10 = gpiod::PD10<Input<Floating>>;
 
     unsafe impl RmiiRefClk for PA1 {}
-    unsafe impl MDIO for PA2 {}
-    unsafe impl MDC for PC1 {}
     unsafe impl RmiiCrsDv for PA7 {}
     unsafe impl RmiiCrsDv for PD8 {}
     unsafe impl RmiiTxEN for PB11 {}
@@ -302,5 +298,5 @@ mod stm32f1 {
         }
     }
 
-    impl_alt_very_high_speed!(PA1, PA2, PA7, PB11, PB12, PB13, PC1, PC4, PC5, PD8, PD9, PD10);
+    impl_alt_very_high_speed!(PA1, PA7, PB11, PB12, PB13, PC4, PC5, PD8, PD9, PD10);
 }

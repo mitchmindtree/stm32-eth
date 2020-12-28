@@ -102,13 +102,23 @@ where
     }
 }
 
-#[cfg(feature = "device-selected")]
+#[cfg(feature = "stm32f4xx-hal")]
 mod pin_impls {
-    #[cfg(feature = "stm32f4xx-hal")]
     use stm32f4xx_hal::gpio::{gpioa::PA2, gpioc::PC1, Alternate, AF11};
-    #[cfg(feature = "stm32f7xx-hal")]
-    use stm32f7xx_hal::gpio::{gpioa::PA2, gpioc::PC1, Alternate, AF11};
-
     unsafe impl super::MdioPin for PA2<Alternate<AF11>> {}
     unsafe impl super::MdcPin for PC1<Alternate<AF11>> {}
+}
+
+#[cfg(feature = "stm32f7xx-hal")]
+mod pin_impls {
+    use stm32f7xx_hal::gpio::{gpioa::PA2, gpioc::PC1, Alternate, AF11};
+    unsafe impl super::MdioPin for PA2<Alternate<AF11>> {}
+    unsafe impl super::MdcPin for PC1<Alternate<AF11>> {}
+}
+
+#[cfg(feature = "stm32f1xx-hal")]
+mod pin_impls {
+    use stm32f1xx_hal::gpio::{gpioa::PA2, gpioc::PC1, Alternate, PushPull};
+    unsafe impl super::MdioPin for PA2<Alternate<PushPull>> {}
+    unsafe impl super::MdcPin for PC1<Alternate<PushPull>> {}
 }
