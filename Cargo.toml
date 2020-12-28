@@ -15,7 +15,7 @@ travis-ci = { repository = "astro/stm32-eth", branch = "master" }
 maintenance = { status = "experimental" }
 
 [package.metadata.docs.rs]
-features = [ "smoltcp-phy", "stm32f429" ]
+features = [ "smi", "smoltcp-phy", "stm32f429" ]
 
 [dependencies]
 volatile-register = "0.2"
@@ -35,6 +35,7 @@ optional = true
 [features]
 device-selected = []
 fence = []
+smi = []
 
 stm32f107 = ["stm32f1xx-hal/stm32f107", "device-selected"]
 
@@ -71,7 +72,7 @@ stm32f1xx-hal = {version = "0.6.1", features = ["rt"] }
 
 [[example]]
 name = "pktgen"
-required-features = ["stm32f429"]
+required-features = ["smi", "stm32f429"]
 
 [[example]]
 name = "ip"
